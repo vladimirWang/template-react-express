@@ -1,0 +1,12 @@
+@host=http://localhost:8800
+
+
+### register 正确
+GET {{host}}/api/auth/register?email=11223@qq.com&password=444&username=rose
+
+### register
+GET {{host}}/api/auth/register?email=f1ff@qq.com&password=444&username=m1ike
+# {
+#   "username": "mike",
+#   "password": "123132"
+# }
