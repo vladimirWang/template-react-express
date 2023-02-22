@@ -1,0 +1,33 @@
+@host=http://localhost:8800
+
+
+### register 正确
+GET {{host}}/api/auth/register?email=11223@qq.com&password=444&username=rose
+
+### register
+GET {{host}}/api/auth/register?email=f1ff@qq.com&password=444&username=m1ike
+# {
+#   "username": "mike",
+#   "password": "123132"
+# }
+
+
+### test
+GET {{host}}/api/test/constraint?id=12
+# {
+#   "username": "mike",
+#   "password": "123132"
+# }
+
+
+### test
+POST {{host}}/api/test
+Content-Type: application/json
+
+{
+  "name": "fofad",
+  "fooId": 1
+}
+
+### 统计关联字段
+GET {{host}}/api/test/get-include-count
