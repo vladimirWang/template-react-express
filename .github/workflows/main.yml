@@ -22,7 +22,7 @@ jobs:
           username: 'root'
           password: ${{ secrets.ALIYUN_PASSWORD }}
           port: 22
-          source: './'
+          source: 'test'
           target: '/root/applications/stock_admin'
 #    - uses: actions/checkout@v3
 #    - name: Use Node.js ${{ matrix.node-version }}
