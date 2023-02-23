@@ -12,7 +12,13 @@ export function genInsertSql(tbName, body, numberFields = []) {
   const date = today.getDate()
   const values = Object.keys(body).reduce((a, c) => {
     if (body[c] !== undefined) {
-      a.push(numberFields.includes(c) ? body[c] : `"${body[c]}"`)
+      let value
+      if (body[c] === '') {
+        value = 'NULL'
+      } else {
+        value = numberFields.includes(c) ? body[c] : `"${body[c]}"`
+      }
+      a.push(value)
     }
     return a
   }, []).concat([`"${year}-${month}-${date}"`, `"${year}-${month}-${date}"`])
@@ -22,10 +28,16 @@ export function genInsertSql(tbName, body, numberFields = []) {
 export function genSetStr(body, numberFields = []) {
   let setStr = Object.keys(body).reduce((a, c) => {
     if (body[c] !== undefined) {
-      const str = numberFields.includes(c) ? `${c} = ${body[c]}` : `${c} = "${body[c]}"`
-      a.push(str)
+      let value
+      if (body[c] === '') {
+        value = 'NULL'
+      } else {
+        value = numberFields.includes(c) ? body[c] : `"${body[c]}"`
+      }
+      a.push(`${c} = ${value}`)
     }
     return a
   }, [])
+  console.log(setStr, '----set str')
   return setStr.join(',')
 }
