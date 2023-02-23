@@ -1,35 +1,15 @@
-import {Product} from '../models/productStock.js'
-import {body, validationResult} from 'express-validator'
+import { Product } from '../models/productStock.js'
+import { body, validationResult } from 'express-validator'
 import * as _ from 'lodash'
 import db from '../models/index.js'
-
-function genInsertSql(tbName, body, numberFields = []) {
-  const fields = Object.keys(body).reduce((a, c) => {
-    if(body[c] !== undefined) {
-      a.push(c)
-    }
-    return a
-  }, []).concat(['createdAt', 'updatedAt'])
-
-  const today = new Date();
-  const year = today.getFullYear()
-  const month = today.getMonth()+1
-  const date = today.getDate()
-  const values = Object.keys(body).reduce((a, c) => {
-    if (body[c] !== undefined) {
-      a.push(numberFields.includes(c) ? body[c] : `"${body[c]}"`)
-    }
-    return a
-  }, []).concat([`"${year}-${month}-${date}"`, `"${year}-${month}-${date}"`])
-  return `INSERT INTO ${tbName} (${fields.join(',')}) VALUES (${values.join(',')})`
-}
+import { genInsertSql, genSetStr } from '../utils/db.js'
 
 
 export const getProducts = async (req, res) => {
   try {
     const products = await Product.findAll({ where: req.query })
 
-    res.send({ msg: '查询成功', data: products , success: true})
+    res.send({ msg: '查询成功', data: products, success: true })
     // const where = genWhere(_.default.omit(req.query, ['page', 'pageSize']), [strFields])
     // const querySql = `SELECT * FROM products ` + where + genLimit(req.query)
     // // res.json('result')
@@ -51,7 +31,7 @@ export const getProducts = async (req, res) => {
     // } else {
     //   res.json(result)
     // }
-    
+
 
     // console.log(result, '--result')
     // res.status(200).send({ success: true, data: { id: result.insertId } })
@@ -68,7 +48,7 @@ export const getProductsWithPagination = async (req, res) => {
     const limit = ` LIMIT ${pageSize} OFFSET ${offset}`
     const groupBy = ' GROUP BY p.id '
     let sql = `
-              SELECT SUM(s.count) sum, p.productId productId, p.id id, p.productName, p.img img FROM products p LEFT JOIN stocks s
+              SELECT SUM(s.count) sum, p.productId productId, p.id id, p.productName, p.img img, s.updatedAt FROM products p LEFT JOIN stocks s
         on p.id = s.productId WHERE 1 = 1
       `
     const whereProductId = ` AND p.productId LIKE "%${productId}%"`
@@ -79,10 +59,11 @@ export const getProductsWithPagination = async (req, res) => {
     if (productName) {
       sql += whereProductName
     }
-    sql += groupBy+ limit
+    // sql += groupBy + limit
+    sql += groupBy + " ORDER BY s.updatedAt DESC" + limit
     let [rows] = await db.query(sql)
     rows = rows.map(item => {
-      return {...item, sum: !item.sum ? '0' : item.sum}
+      return { ...item, sum: !item.sum ? '0' : item.sum }
     })
     let totalSql = `
       SELECT COUNT(*) count FROM products p WHERE 1 = 1 
@@ -93,9 +74,9 @@ export const getProductsWithPagination = async (req, res) => {
     if (productName) {
       totalSql += whereProductName
     }
-    const [[{count}]] = await db.query(totalSql)
+    const [[{ count }]] = await db.query(totalSql)
     console.log(count, '---count')
-    res.status(200).json({success: true, data: {rows, count}})
+    res.status(200).json({ success: true, data: { rows, count } })
   } catch (error) {
     res.status(500).send(error.message)
   }
@@ -103,7 +84,7 @@ export const getProductsWithPagination = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     // const product = await Product.findByPk(req.params.id)
-    const [result] = await db.query(`SELECT * FROM products p WHERE p.id = ${req.params.id}`) 
+    const [result] = await db.query(`SELECT * FROM products p WHERE p.id = ${req.params.id}`)
     console.log(result, '---result')
     if (result.length === 0) return res.status(404).send({ success: false, msg: 'Specified product does not existed' })
     res.status(200).send({ success: true, data: result[0] })
@@ -133,10 +114,10 @@ export const addProduct = async (req, res) => {
     const insertSql = genInsertSql("products", { productName, productId, img, author, remark })
     const [result] = await db.query(insertSql)
     console.log(result, '---result');
-    
+
     res.status(200).send({ success: true, data: { id: '1' }, msg: '商品新建成功' })
   } catch (error) {
-    res.status(500).send({success: false, msg: error.message})
+    res.status(500).send({ success: false, msg: error.message })
   }
 }
 
@@ -149,10 +130,24 @@ export async function updateProduct(req, res) {
   // const updateSql = genUpdateSql('products', req.body, {id: req.params.id}, strFields)
   // console.log(updateSql, '---udpate sql')
   try {
-    const product = await Product.update({...req.body}, {
-      where: { id: req.params.id }
-    })
-    res.json({success: true, msg: '更新成功'})
+    const { productName, productId, img, author, remark } = req.body
+    const setStr = genSetStr({ productName, productId, img, author, remark })
+    if (setStr === '') {
+      res.status(400).json({ success: false, msg: '参数错误' })
+      return
+    }
+    let updateSql = `
+      UPDATE products SET ${setStr} WHERE id = ${req.params.id}
+    `
+
+    // const whereId = ` WHERE id = ${req.params.id}`
+    // updateSql += whereId
+    const [result] = await db.query(updateSql)
+    console.log(result, '----udpate');
+    // const product = await Product.update({ ...req.body }, {
+    //   where: { id: req.params.id }
+    // })
+    res.json({ success: true, msg: '更新成功' })
   } catch (error) {
     res.status(500).send(error.message)
   }

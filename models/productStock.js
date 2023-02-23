@@ -2,7 +2,7 @@
 import { Model, DataTypes } from 'sequelize';
 import sequelize from './index.js'
 
-export class Product extends Model {};
+export class Product extends Model { };
 Product.init({
   id: {
     type: DataTypes.INTEGER(11),
@@ -23,6 +23,9 @@ Product.init({
   img: {
     type: DataTypes.STRING,
   },
+  remark: {
+    type: DataTypes.STRING,
+  },
   author: {
     type: DataTypes.STRING(10),
   }
@@ -32,7 +35,7 @@ Product.init({
 });
 
 
-export class Stock extends Model {};
+export class Stock extends Model { };
 Stock.init({
   count: DataTypes.STRING,
   date: DataTypes.DATE
